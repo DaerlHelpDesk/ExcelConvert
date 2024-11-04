@@ -27,8 +27,7 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             margin-right: 20px;
         }
-        #chart-container,
-        #additional-chart-container {
+        #chart-container {
             width: 150px;  /* Set width to a smaller size */
             height: 150px; /* Set height to a smaller size */
         }
@@ -62,18 +61,12 @@
         </div>
 
         <div id="table-container"></div>
-
-        <div id="additional-chart-container">
-            <h4>Overall Status Distribution</h4>
-            <canvas id="overallStatusChart"></canvas>
-        </div>
     </div>
 
     <script>
         let data = []; // Store the parsed data
         let assignees = new Set(); // Initialize with an empty set
         let statusChart; // Declare chart variable
-        let overallStatusChart; // Declare overall chart variable
 
         document.getElementById('fileInput').addEventListener('change', handleFile, false);
 
@@ -91,7 +84,6 @@
 
                 populateAssigneeDropdown(data); // Populate dropdown with assignees
                 displayTable(data); // Display full table initially
-                updateOverallChart(); // Update overall chart initially
                 if (assignees.size > 0) {
                     // Automatically select the first assignee if available
                     const firstAssignee = Array.from(assignees)[0];
@@ -230,49 +222,6 @@
                     type: 'pie',
                     data: chartData,
                     options: options
-                });
-            }
-        }
-
-        function updateOverallChart() {
-            let openCount = 0;
-            let closedCount = 0;
-
-            // Count overall statuses from the status column
-            data.forEach((row, index) => {
-                if (index === 0) return; // Skip header row
-                const status = row[1]?.trim().toLowerCase(); // Assuming status is in the second column
-                if (status === 'open') {
-                    openCount++;
-                } else if (status === 'closed') {
-                    closedCount++;
-                }
-            });
-
-            const ctx = document.getElementById('overallStatusChart').getContext('2d');
-            const overallChartData = {
-                labels: ['Open Calls', 'Closed Calls'],
-                datasets: [{
-                    label: 'Overall Call Status',
-                    data: [openCount, closedCount],
-                    backgroundColor: ['lightblue', 'lightyellow'],
-                    borderColor: ['blue', 'gold'],
-                    borderWidth: 1
-                }]
-            };
-
-            // Create overall chart
-            if (overallStatusChart) {
-                overallStatusChart.data = overallChartData;
-                overallStatusChart.update();
-            } else {
-                overallStatusChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: overallChartData,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false
-                    }
                 });
             }
         }
