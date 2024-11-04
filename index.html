@@ -72,6 +72,8 @@
     <script>
         let data = []; // Store the parsed data
         let assignees = new Set(); // Initialize with an empty set
+        let statusChart; // Declare chart variable
+        let overallStatusChart; // Declare overall chart variable
 
         document.getElementById('fileInput').addEventListener('change', handleFile, false);
 
@@ -218,11 +220,13 @@
             };
 
             // Create or update the chart
-            if (window.statusChart) {
-                window.statusChart.data = chartData;
-                window.statusChart.update();
+            if (statusChart) {
+                // Update existing chart
+                statusChart.data = chartData;
+                statusChart.update();
             } else {
-                window.statusChart = new Chart(ctx, {
+                // Create new chart
+                statusChart = new Chart(ctx, {
                     type: 'pie',
                     data: chartData,
                     options: options
@@ -234,7 +238,7 @@
             let openCount = 0;
             let closedCount = 0;
 
-            // Count overall statuses
+            // Count overall statuses from the status column
             data.forEach((row, index) => {
                 if (index === 0) return; // Skip header row
                 const status = row[1]?.trim().toLowerCase(); // Assuming status is in the second column
@@ -258,14 +262,19 @@
             };
 
             // Create overall chart
-            window.overallStatusChart = new Chart(ctx, {
-                type: 'pie',
-                data: overallChartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+            if (overallStatusChart) {
+                overallStatusChart.data = overallChartData;
+                overallStatusChart.update();
+            } else {
+                overallStatusChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: overallChartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
         }
     </script>
 </body>
