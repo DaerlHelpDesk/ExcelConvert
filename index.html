@@ -3,228 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel Data Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Upload Excel/CSV</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Add Chart.js -->
+    
+    <!-- Google Font - Bungee Spice -->
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Spice&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <style>
         body {
-            background: linear-gradient(135deg, #74ebd5, #acb6e5);
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(145deg, #b6dbfa, #d8f378);
+            margin: 0;
+            padding: 0;
             color: #333;
+        }
+        h1 {
+            font-family: 'Bungee Spice', cursive;
+            font-weight: 700;
+            text-align: center;
+            color: #333;
+            margin-top: 20px;
+            font-size: 58px; 
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
             padding: 20px;
-        }
-        #summary-container {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }
-        #summary {
-            font-weight: bold;
-            font-size: 1.2em;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 15px;
+            background-color: rgba(113, 183, 192, 0.4);
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            margin-right: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        #chart-container {
-            width: 150px;  /* Set width to a smaller size */
-            height: 150px; /* Set height to a smaller size */
-        }
-        canvas {
-            max-width: 100%; /* Make sure charts fit their container */
-            max-height: 100%;
-        }
-        #table-container {
+        .file-upload-container {
+            display: flex;
+            justify-content: center;
             margin-top: 20px;
         }
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #eaf1fc;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        input[type="file"]:hover {
+            background-color: #cfe3fc;
+        }
+        .filter-section {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .filter-section label {
+            font-weight: 600;
+            color: #444;
+        }
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: rgba(113, 183, 192, 0.1);
+            font-size: 14px;
+            min-width: 150px;
+        }
+        table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+            border-radius: 8px;
+            background-color: rgba(113, 183, 192, 0.1);
+            overflow: hidden;
+        }
+        table thead {
+            background: linear-gradient(145deg, #b6dbfa, #d8f378);
+        }
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+        }
+        table tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #f1f7fc;
+        }
+        .count-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f7f7f7;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-badge {
+            padding: 8px 15px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+        }
+        .open-badge { background-color: #e74c3c; 
+        }
+        .closed-badge { background-color: #7ed438; 
+        }
+
+        #assigneeFilter {
+        background: linear-gradient(145deg, #b6dbfa, #d8f378);
+        border: 1px solid #d0d0d0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        min-width: 150px;
+    }
+    #statusFilter {
+        background: linear-gradient(145deg, #b6dbfa, #d8f378);
+        border: 1px solid #d0d0d0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>DAERL HELP DESK CALLS</h1>
-        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv, .xlsm, .xlsb, .ods, .txt" />
 
-        <div id="summary-container">
-            <div id="summary">
-                <label for="assignee-select">Select Assignee:</label>
-                <select id="assignee-select" class="form-control" onchange="updateSummary()">
-                    <option value="">-- Select Assignee --</option>
-                </select>
-                <h4>Summary for Selected Assignee</h4>
-                <p>Total Open Calls: <span id="open-count">0</span></p>
-                <p>Total Closed Calls: <span id="closed-count">0</span></p>
-            </div>
-            <div id="chart-container">
-                <canvas id="statusChart"></canvas>
-            </div>
-        </div>
+<div class="container">
+    <h1>Upload Excel or CSV File</h1>
 
-        <div id="table-container"></div>
+    <div class="file-upload-container">
+        <input type="file" id="upload" accept=".xlsx, .xls, .ods, .csv" />
     </div>
 
-    <script>
-        let data = []; // Store the parsed data
-        let assignees = new Set(); // Initialize with an empty set
-        let statusChart; // Declare chart variable
+    <hr>
 
-        document.getElementById('fileInput').addEventListener('change', handleFile, false);
+    <div id="chart-container" style="position: relative; height: 100px;">
+        <canvas id="statusChart"></canvas>
+    </div>
 
-        function handleFile(e) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
+    <hr>
 
-            reader.onload = function(event) {
-                const dataArray = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(dataArray, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                data = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { header: 1 });
+    <div class="filter-section">
+        <div>
+            <label for="statusFilter">Filter by Status: </label>
+            <select id="statusFilter">
+                <option value="">All</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+            </select>
+        </div>
 
-                console.log('Parsed Excel Data:', data); // Log for debugging
+        <div>
+            <label for="assigneeFilter">Filter by Assignee: </label>
+            <select id="assigneeFilter" multiple>
+                <!-- Assignees will be dynamically populated -->
+            </select>
+        </div>
+    </div>
 
-                populateAssigneeDropdown(data); // Populate dropdown with assignees
-                displayTable(data); // Display full table initially
-                if (assignees.size > 0) {
-                    // Automatically select the first assignee if available
-                    const firstAssignee = Array.from(assignees)[0];
-                    document.getElementById('assignee-select').value = firstAssignee;
-                    updateSummary(); // Update the summary for the first assignee
-                }
-            };
+    <div class="count-section">
+        <span id="openCount" class="status-badge open-badge">Open: 0</span>
+        <span id="closedCount" class="status-badge closed-badge">Closed: 0</span>
+    </div>
 
-            reader.readAsArrayBuffer(file);
-        }
+    <div id="tableContainer"></div>
+</div>
 
-        function displayTable(data, assigneeFilter = null) {
-            let html = '<table class="table table-striped">';
-            const headers = data[0];
-            const statusIndex = headers.indexOf('status');
-            const assigneeIndex = headers.indexOf('assignee');
+<script>
+    let globalData = [];
+    let assignees = new Set();
+    let assigneeColumnIndex = -1;
+    let statusColumnIndex = -1;
+    let statusChart;
 
-            // Add header row
-            html += '<thead><tr>';
-            headers.forEach(header => {
-                html += `<th>${header}</th>`;
-            });
-            html += '</tr></thead><tbody>';
+    $(document).ready(function () {
+        $('#upload').change(handleFileUpload);
+        $('#statusFilter').change(updateTable);
+        $('#assigneeFilter').change(updateTable);
+    });
 
-            data.forEach((row, index) => {
-                if (index > 0) { // Skip header row
-                    if (assigneeFilter && row[assigneeIndex]?.trim().toLowerCase() !== assigneeFilter) {
-                        return; // Skip rows that don't match the selected assignee
-                    }
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const fileType = file.name.split('.').pop().toLowerCase();
 
-                    let rowStyle = '';
-                    const status = row[statusIndex]?.trim().toLowerCase();
-                    if (status === 'open') {
-                        rowStyle = 'style="background-color: lightcoral;"'; // Light red
-                    } else if (status === 'closed') {
-                        rowStyle = 'style="background-color: lightgreen;"'; // Light green
-                    }
-                    
-                    html += `<tr ${rowStyle}>`;
-                    row.forEach(cell => {
-                        html += `<td>${cell !== undefined ? cell : ''}</td>`;
+            if (fileType === 'csv') {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const csvData = e.target.result;
+                    Papa.parse(csvData, {
+                        complete: function(results) {
+                            globalData = results.data;
+                            extractColumns(globalData);
+                            populateAssignees(globalData);
+                            displayTable(globalData);
+                        },
+                        header: false
                     });
-                    html += '</tr>';
-                }
-            });
-            html += '</tbody></table>';
-            document.getElementById('table-container').innerHTML = html;
-        }
-
-        function populateAssigneeDropdown(data) {
-            const headers = data[0];
-            const assigneeIndex = headers.indexOf('assignee');
-
-            if (assigneeIndex === -1) {
-                console.error("Assignee header not found.");
-                return;
-            }
-
-            for (let i = 1; i < data.length; i++) {
-                const row = data[i];
-                const assignee = row[assigneeIndex]?.trim();
-                if (assignee) {
-                    assignees.add(assignee.toLowerCase()); // Add unique assignee in lowercase
-                }
-            }
-
-            const assigneeSelect = document.getElementById('assignee-select');
-            assignees.forEach(assignee => {
-                const option = document.createElement('option');
-                option.value = assignee;
-                option.textContent = assignee.charAt(0).toUpperCase() + assignee.slice(1); // Capitalize the first letter
-                assigneeSelect.appendChild(option);
-            });
-        }
-
-        function updateSummary() {
-            const selectedAssignee = document.getElementById('assignee-select').value.toLowerCase();
-            const headers = data[0];
-            const statusIndex = headers.indexOf('status');
-            const assigneeIndex = headers.indexOf('assignee');
-
-            let openCount = 0;
-            let closedCount = 0;
-
-            for (let i = 1; i < data.length; i++) {
-                const row = data[i];
-                const status = row[statusIndex]?.trim().toLowerCase();
-                const assignee = row[assigneeIndex]?.trim().toLowerCase();
-
-                if (selectedAssignee && assignee === selectedAssignee) {
-                    if (status === 'open') {
-                        openCount++;
-                    } else if (status === 'closed') {
-                        closedCount++;
-                    }
-                }
-            }
-
-            // Update summary section for selected assignee
-            document.getElementById('open-count').innerText = openCount;
-            document.getElementById('closed-count').innerText = closedCount;
-
-            // Display only the selected assignee's data in the table
-            displayTable(data, selectedAssignee);
-
-            // Update the chart
-            updateChart(openCount, closedCount);
-        }
-
-        function updateChart(openCount, closedCount) {
-            const ctx = document.getElementById('statusChart').getContext('2d');
-            const chartData = {
-                labels: ['Open Calls', 'Closed Calls'],
-                datasets: [{
-                    label: 'Call Status',
-                    data: [openCount, closedCount],
-                    backgroundColor: ['lightcoral', 'lightgreen'],
-                    borderColor: ['darkred', 'darkgreen'],
-                    borderWidth: 1
-                }]
-            };
-
-            const options = {
-                responsive: true,
-                maintainAspectRatio: false
-            };
-
-            // Create or update the chart
-            if (statusChart) {
-                // Update existing chart
-                statusChart.data = chartData;
-                statusChart.update();
+                };
+                reader.readAsText(file);
+            } else if (['xlsx', 'xls', 'ods'].includes(fileType)) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    globalData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    extractColumns(globalData);
+                    populateAssignees(globalData);
+                    displayTable(globalData);
+                };
+                reader.readAsArrayBuffer(file);
             } else {
-                // Create new chart
-                statusChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: chartData,
-                    options: options
-                });
+                alert("Please upload a valid file (CSV, XLSX, XLS, or ODS).");
             }
         }
-    </script>
+    }
+
+    function extractColumns(data) {
+        const headerRow = data[0];
+        assigneeColumnIndex = headerRow.indexOf("assignee");
+        if (assigneeColumnIndex === -1) {
+            assigneeColumnIndex = headerRow.indexOf("Assigned To");
+        }
+        statusColumnIndex = headerRow.indexOf("status");
+    }
+
+    function populateAssignees(data) {
+        assignees.clear();
+        for (let i = 1; i < data.length; i++) {
+            let assignee = data[i][assigneeColumnIndex];
+            if (assignee) assignees.add(assignee);
+        }
+
+        const assigneeFilter = document.getElementById('assigneeFilter');
+        assigneeFilter.innerHTML = '';
+
+        assignees.forEach(assignee => {
+            let option = document.createElement('option');
+            option.value = assignee;
+            option.textContent = assignee;
+            assigneeFilter.appendChild(option);
+        });
+    }
+
+    function displayTable(data) {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const selectedAssignees = Array.from(document.getElementById('assigneeFilter').selectedOptions).map(option => option.value);
+
+        let filteredData = data.filter((row, index) => {
+            if (index === 0) return true;
+            let status = row[statusColumnIndex]?.toString().toLowerCase();
+            let assignee = row[assigneeColumnIndex];
+
+            const statusMatch = statusFilter === '' || status === statusFilter;
+            const assigneeMatch = selectedAssignees.length === 0 || selectedAssignees.includes(assignee);
+
+            return statusMatch && assigneeMatch;
+        });
+
+        let openCount = 0;
+        let closedCount = 0;
+
+        let tableHtml = '<table>';
+        tableHtml += '<thead><tr>';
+        filteredData[0].forEach(header => {
+            tableHtml += `<th>${header}</th>`;
+        });
+        tableHtml += '</tr></thead><tbody>';
+
+        for (let i = 1; i < filteredData.length; i++) {
+            let status = filteredData[i][statusColumnIndex]?.toString().toLowerCase();
+            let rowColor = status === 'closed' ? 'background-color: #a8e6a1;' : 
+                           status === 'open' ? 'background-color: #f8c2c2;' : '';
+
+            if (status === 'open') openCount++;
+            if (status === 'closed') closedCount++;
+
+            tableHtml += `<tr style="${rowColor}">`;
+            filteredData[i].forEach(cell => {
+                tableHtml += `<td>${cell}</td>`;
+            });
+            tableHtml += '</tr>';
+        }
+
+        tableHtml += '</tbody></table>';
+        document.getElementById('tableContainer').innerHTML = tableHtml;
+
+        document.getElementById('openCount').textContent = `Open: ${openCount}`;
+        document.getElementById('closedCount').textContent = `Closed: ${closedCount}`;
+
+        updateStatusChart(openCount, closedCount);
+    }
+
+    function updateTable() {
+        displayTable(globalData);
+    }
+
+    function updateStatusChart(openCount, closedCount) {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        const chartData = {
+            labels: ['Open Calls', 'Closed Calls'],
+            datasets: [{
+                label: 'Status Distribution',
+                data: [openCount, closedCount],
+                backgroundColor: ['lightcoral', 'lightgreen'],
+                borderColor: ['darkred', 'darkgreen'],
+                borderWidth: 1
+            }]
+        };
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false
+        };
+
+        if (statusChart) {
+            statusChart.data = chartData;
+            statusChart.update();
+        } else {
+            statusChart = new Chart(ctx, {
+                type: 'pie',
+                data: chartData,
+                options: options
+            });
+        }
+    }
+</script>
+
 </body>
 </html>
